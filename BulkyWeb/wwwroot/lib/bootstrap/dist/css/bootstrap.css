@@ -13739,8 +13739,8 @@ textarea.form-control-lg {
 }
 
 .sandstone, .tooltip, .dropdown-menu .dropdown-item, .pagination, .breadcrumb, .nav-pills .nav-link, .nav-tabs .nav-link, .btn, .navbar .nav-link {
-    font-size: 20px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 450;
     line-height: 35px;
     text-transform: uppercase;
 }
