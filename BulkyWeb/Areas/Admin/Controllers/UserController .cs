@@ -19,13 +19,17 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
 
     public class UserController : Controller
     {
-        private readonly ApplicationDbContext _db;
+        
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IUnitOfWork _unitOfWork;
     
-        public UserController(ApplicationDbContext db, UserManager<IdentityUser> userManager)
+        public UserController(IUnitOfWork unitOfWork, RoleManager<IdentityRole> roleManager, UserManager<IdentityUser> userManager)
         {
-            _db = db;
+           
             _userManager = userManager;
+            _roleManager = roleManager;
+            _unitOfWork = unitOfWork;
         }
 
         
@@ -38,38 +42,44 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
 
         public IActionResult RoleManagment(string UserId)
         {
-            string RoleId=_db.UserRoles.FirstOrDefault(u=>u.UserId== UserId).RoleId;
+            //string RoleId=_db.UserRoles.FirstOrDefault(u=>u.UserId== UserId).RoleId;
             RoleManagmentVM RoleVM = new RoleManagmentVM
             {
-                ApplicationUser = _db.ApplicationUsers.Include(u => u.company)
-                .FirstOrDefault(u => u.Id == UserId),
+                ApplicationUser = _unitOfWork.ApplicationUser.Get(u=>u.Id==UserId,IncludeProperities: "company"),
+                
 
-                RoleList = _db.Roles.Select(i => new SelectListItem
+                RoleList = _roleManager.Roles.Select(i => new SelectListItem
                 {
                     Text = i.Name,
                     Value = i.Name
 
                 }),
-                CompanyList = _db.Companies.Select(i => new SelectListItem
+                CompanyList =_unitOfWork.Company.GetAll(). Select(i => new SelectListItem
                 {
                     Text = i.Name,
                     Value = i.Id.ToString()
                 })
             };
-            RoleVM.ApplicationUser.Role = _db.Roles.FirstOrDefault(u => u.Id == RoleId).Name;
+            RoleVM.ApplicationUser.Role = _userManager.GetRolesAsync(_unitOfWork.ApplicationUser.
+                Get(x=>x.Id==UserId)).
+                GetAwaiter().GetResult().FirstOrDefault();
             return View(RoleVM);
         }
 
         [HttpPost]
         public IActionResult RoleManagment(RoleManagmentVM roleManagmentVM)
         {
-            string RoleId = _db.UserRoles.FirstOrDefault(u => u.UserId == roleManagmentVM.ApplicationUser.Id).RoleId;
-            string oldRole = _db.Roles.FirstOrDefault(u => u.Id == RoleId).Name;
+            string oldRole =
+              _userManager.GetRolesAsync(_unitOfWork.ApplicationUser.
+                Get(x => x.Id == roleManagmentVM.ApplicationUser.Id)).
+                GetAwaiter().GetResult().FirstOrDefault();
+
+            ApplicationUser applicationUser = _unitOfWork.ApplicationUser.Get(u=>u.Id==roleManagmentVM.ApplicationUser.Id);
+
 
             if (!(roleManagmentVM.ApplicationUser.Role == oldRole))
             {
                 // role was updated
-                ApplicationUser applicationUser = _db.ApplicationUsers.FirstOrDefault(u => u.Id == roleManagmentVM.ApplicationUser.Id);
                 if (roleManagmentVM.ApplicationUser.Role==SD.Role_Company)
                 {
                     applicationUser.CompanyId = roleManagmentVM.ApplicationUser.CompanyId;
@@ -78,9 +88,19 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
                 {
                     applicationUser.CompanyId = null;
                 }
-                _db.SaveChanges();
+                _unitOfWork.ApplicationUser.Update(applicationUser);
+                _unitOfWork.Save();
                 _userManager.RemoveFromRoleAsync(applicationUser, oldRole).GetAwaiter().GetResult();
                 _userManager.AddToRoleAsync(applicationUser, roleManagmentVM.ApplicationUser.Role).GetAwaiter().GetResult();
+            }
+            else
+            {
+                if(oldRole==SD.Role_Company && applicationUser.CompanyId != roleManagmentVM.ApplicationUser.CompanyId)
+                {
+                    applicationUser.CompanyId = roleManagmentVM.ApplicationUser.CompanyId;
+                    _unitOfWork.ApplicationUser.Update(applicationUser);
+                    _unitOfWork.Save();
+                }
             }
 
           return RedirectToAction("index");
@@ -91,13 +111,13 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<ApplicationUser> objUserList = _db.ApplicationUsers.Include(u=>u.company).ToList();
-            var UserRoles = _db.UserRoles.ToList();
-            var Roles=_db.Roles.ToList();
+            List<ApplicationUser> objUserList = _unitOfWork.ApplicationUser.GetAll(IncludeProperities:"company").ToList();
+            
             foreach(var user in objUserList)
             {
-                var RoleId = UserRoles.FirstOrDefault(u => u.UserId == user.Id).RoleId;
-                user.Role = Roles.FirstOrDefault(u => u.Id == RoleId).Name;
+               
+                user.Role =  _userManager.GetRolesAsync(user).GetAwaiter().GetResult().FirstOrDefault();
+
                 if (user.company == null)
                 {
                     user.company=new Company()
@@ -112,7 +132,7 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
         [HttpPost]
         public IActionResult LockUnLock([FromBody]string id)
         {
-          var objFromDb= _db.ApplicationUsers.FirstOrDefault(u=>u.Id==id);
+          var objFromDb= _unitOfWork.ApplicationUser.Get(u=>u.Id==id);
             if (objFromDb == null)
             {
                 return Json(new { success = false, message = "Error while Locking/UnLocking" });
@@ -127,8 +147,8 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
             {
                 objFromDb.LockoutEnd = DateTime.Now.AddYears(1000);
             }
-            _db.SaveChanges();
-
+            _unitOfWork.ApplicationUser.Update(objFromDb);
+            _unitOfWork.Save();
 
 
             return Json(new { success = true, message = "Opertaion Successful" });
