@@ -3,7 +3,7 @@
 This project is an online book shop web application built to provide a seamless shopping experience for book enthusiasts. It incorporates full CRUD (Create, Read, Update, Delete) operations for managing book inventory, comprehensive order management, secure authentication using ASP.NET Identity with external login support, and a user-friendly admin panel for efficient user management.
 
 ## Live Production
-View the live production version of the application [here](https://bookcorner.runasp.net/).
+View the live production version of the application  <a href="https://bookcorner.runasp.net/" target="_blank">here</a>..
 
 
 ## Features
