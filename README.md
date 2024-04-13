@@ -50,5 +50,7 @@ To run the application locally, follow these steps:
 ## Contributors
 
 - [Ahmed Elghobary ](https://www.linkedin.com/in/ahmed-elghobary/): Backend Development & Database Management
+- - <a href="https://www.linkedin.com/in/ahmed-elghobary/" target="_blank">Alice Johnson</a>: Backend Development & Database Management
+
 
  Happy coding! 📚💻
