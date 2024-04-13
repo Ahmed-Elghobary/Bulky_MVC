@@ -34,6 +34,9 @@ View the live production version of the application [here](https://bookcorner.ru
 - **Book Inventory Management:** Admins have full control over the book inventory, including adding new books, updating details, and removing obsolete ones.
 - **Order Management:** Admins can view and manage orders, update their status, and track shipments.
 
+## Repository Design Pattern
+This project follows the Repository Design Pattern to separate the data access logic from the business logic. This enhances modularity, maintainability, and testability of the codebase. The repository pattern ensures a clear separation of concerns and facilitates easier unit testing by providing a mockable abstraction over the data access layer.
+
 ## Technologies Used
 ASP.NET Core, Entity Framework Core, Bootstrap, Payment Gateway Integration, ASP.NET Identity, External Login Providers
 
